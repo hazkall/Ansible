@@ -533,7 +533,7 @@ ansible_connection: ssh
 
   - Fazendo a criação do arquivo main.yml dentro de tasks
   - Vamos fazer um exemplo de criação de task para instação de pacotes basicos:
-
+  - Além da utilização de Loop com lista para item com {{item}} é possivel também utiliza $item
 ```sh
 # Nesse exemplo criamos a variavel common_packages e dentro dela contem os pacotes que quero instalar
 name: Instalação de Pacotes Exemplo
@@ -544,7 +544,7 @@ with_items:
 #Ou fazemos de forma manual
 
 name: Instalação de Pacotes Exemplo
-yum: name={{item}} state=latest
+yum: name=$item state=latest
 with_items:
   - vim
   - net-tools
@@ -1377,3 +1377,114 @@ Criptografar senhas, dentro de arquivos:
 
 https://stackoverflow.com/questions/30209062/ansible-how-to-encrypt-some-variables-in-an-inventory-file-in-a-separate-vault
 
+# Utilização de varias tasks no mesmo role
+
+- É possivel a utilização de varios tasks dentro da mesmo role apontando as mesmas dentro do arquivo main.yml 
+- Para isso utilizamos a seguinte padronização:
+
+arquivo tasks\main.yml
+
+```yml
+---
+# Estamos importando as 2 tasks com nome php.yml e phpfpm.yml e será executada somente se estiver com status booleano enabled.
+
+- import_tasks: php.yml
+  when: php_enabled | bool
+  tags: sysctl
+
+- import_tasks: phpfpm.yml
+  when: phpfpm_enabled | bool
+  tags: prelink
+...
+~
+```
+  - Para o parametro enabled ser atendido é necessário que a variavel esteja declarada ou default ou vars do roles
+
+arquivo default\main.yml
+
+```yml
+php_enabled: true
+phpfpm_enabled: true
+
+```
+
+Caso algum deles esteja como falso a task correspondente será pulada.
+
+# Loops - Ansible
+
+Padrão já conhecido com item como {{}}
+
+```yml
+- name: install vim, tmux
+    name: "{{item}}"
+    state: latest
+  with_items:
+    - vim
+    - tmux
+```
+
+Mesma opção agora com o parametro loop (Mais atual e recomendado em documentações)
+
+```yml
+
+- name: install vim, tmux
+    name: "{{item}}"
+    state: latest
+  loop:
+    - vim
+    - tmux
+
+
+- name: Add users
+  user:
+    name: "{{item.name}}"
+    state: present
+    group: "{{item.groups}}"
+  loop:
+    - { name: 'teste1', groups: 'users'}
+    - { name: 'teste2', groups: 'root'}
+
+```
+
+Outro exemplo de utilização de loops:
+
+
+```yml
+
+#Somente exibi o echo quando for diferente de 1 lembrando que está sendo jogado para uma variavel
+- shell: echo "{{item}}"
+  loop:
+    - one
+    - two
+  registrer: echo
+  changed_when: echo.stdout != "one"
+
+```
+
+Usamos nesse exemplo o parametro registrer. Ele tem a função de pegar uma saida e registrar numa variavel.
+
+Muito usado com o modulo debug que mostra uma msg na tela. Como por exemplo o resultado de uma variavel.
+
+```yml
+- debug:
+    msg: "{{item}}"
+  loop: "{{ groups['all']}}" # Faz um loop no arquivo inventory e executa em determinado grupo( No caso desse exemplo será o grupo all)
+  
+```
+
+Proximo exemplo é o parametro loop_control e pause. Limita um tempo para pause(intervalo entre os loops)
+
+Nesse exemplo usamos uma pausa de 5 segundos
+
+```yml
+- name: adicionando users com delay de 5segundos
+  user:
+    name: "{{item}}"
+    state: present
+    groups: "users"
+  loop:
+    - user1
+    - user2
+  loop_control:    pause: 5
+
+```
