@@ -1410,6 +1410,32 @@ phpfpm_enabled: true
 
 Caso algum deles esteja como falso a task correspondente será pulada.
 
+# tags
+
+As TAGS no Ansible é utilizada muito quando se cria Playbooks/Roles longas, nas quals são usadas para separál-las, e com isso, caso queira executar apenas as tasks de uma Role/Playbook que contenham a TAG XYZ, basta passar o parâmetro --tags XYZ durante a execução da Playbook.
+
+
+Sobre o exemplo que você passou, esta sendo apenas aplicado as tags. Suponhando que você tenha mais de uma task com a TAG sysctl, e queir executá-la apenas ela, bastaria explicitar o --tags sysctl durante a execução da Playbook.
+
+
+Outra possibilidade, é aplicar diretamente na Playbook a TAG que quer executar (observe a opção tags):
+
+```yml
+    - hosts: all
+      tags: sysctl
+      tasks:
+        - import_tasks: php.yml
+          when: php_enabled | bool
+          tags: sysctl
+     
+    - import_tasks: phpfpm.yml
+      when: phpfpm_enabled | bool
+      tags: prelink
+```
+
+
+
+
 # Loops - Ansible
 
 Padrão já conhecido com item como {{}}
