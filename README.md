@@ -1330,6 +1330,10 @@ ansible-playbook -i Inventory/hosts playbook_windows.yml
       - ansible-vault decrypt <file_name>
 Exemplo de aplicação:
 
+OBS:. É importante levar em consideração que o module (USER) ao setar uma senha é necessário usar uma HASH, conforme exemplo abaixo (Padrão do proprio LINUX)
+
+password: "{{ password | password_hash('sha512', 'A512' }}"
+
 task para criar um usuário simples dentro do linux:
 
 ```sh
@@ -1345,7 +1349,7 @@ roles/create_user/tasks/main.yml
   user:
     name: teste
     shell: /bin/bash
-    password: "{{ password }}"
+    password: "{{ password | password_hash('sha512', 'A512' }}"
     append: yes
 ...
 ```
